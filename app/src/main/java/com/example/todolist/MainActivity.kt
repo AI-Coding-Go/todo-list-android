@@ -44,7 +44,14 @@ class MainActivity : AppCompatActivity() {
                 showAddEditDialog(todo)
             },
             onTodoStatusChange = { todo, isCompleted ->
-                todoViewModel.toggleTodoStatus(todo)
+                todoViewModel.toggleTodoStatus(todo,
+                    onSuccess = {
+                        // 状态切换成功
+                    },
+                    onError = { error ->
+                        Toast.makeText(this, "状态切换失败: $error", Toast.LENGTH_SHORT).show()
+                    }
+                )
             },
             onTodoEdit = { todo ->
                 showAddEditDialog(todo)
@@ -85,6 +92,18 @@ class MainActivity : AppCompatActivity() {
 
         todoViewModel.completedTodoCount.observe(this) { count ->
             findViewById<android.widget.TextView>(R.id.completedCount).text = count.toString()
+        }
+
+        // 观察加载状态
+        todoViewModel.isLoading.observe(this) { isLoading ->
+            // 可以在这里显示/隐藏加载指示器
+        }
+
+        // 观察错误信息
+        todoViewModel.error.observe(this) { error ->
+            if (error != null) {
+                Toast.makeText(this, "错误: $error", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -211,11 +230,17 @@ class MainActivity : AppCompatActivity() {
                 priority = priority,
                 reminderTime = reminderTime
             )
-            todoViewModel.insertTodo(newTodo)
-            
-            if (reminderTime != null) {
-                setReminder(newTodo, reminderTime)
-            }
+            todoViewModel.insertTodo(newTodo,
+                onSuccess = { id ->
+                    Toast.makeText(this, "添加成功", Toast.LENGTH_SHORT).show()
+                    if (reminderTime != null) {
+                        setReminder(newTodo.copy(id = id), reminderTime)
+                    }
+                },
+                onError = { error ->
+                    Toast.makeText(this, "添加失败: $error", Toast.LENGTH_SHORT).show()
+                }
+            )
         } else {
             val updatedTodo = todo.copy(
                 title = title,
@@ -224,11 +249,17 @@ class MainActivity : AppCompatActivity() {
                 priority = priority,
                 reminderTime = reminderTime
             )
-            todoViewModel.updateTodo(updatedTodo)
-            
-            if (reminderTime != null) {
-                setReminder(updatedTodo, reminderTime)
-            }
+            todoViewModel.updateTodo(updatedTodo,
+                onSuccess = {
+                    Toast.makeText(this, "更新成功", Toast.LENGTH_SHORT).show()
+                    if (reminderTime != null) {
+                        setReminder(updatedTodo, reminderTime)
+                    }
+                },
+                onError = { error ->
+                    Toast.makeText(this, "更新失败: $error", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 
@@ -237,8 +268,14 @@ class MainActivity : AppCompatActivity() {
             .setTitle("删除确认")
             .setMessage("确定要删除「${todo.title}」吗？")
             .setPositiveButton("删除") { _, _ ->
-                todoViewModel.deleteTodo(todo)
-                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show()
+                todoViewModel.deleteTodo(todo,
+                    onSuccess = {
+                        Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show()
+                    },
+                    onError = { error ->
+                        Toast.makeText(this, "删除失败: $error", Toast.LENGTH_SHORT).show()
+                    }
+                )
             }
             .setNegativeButton("取消", null)
             .show()
@@ -247,9 +284,15 @@ class MainActivity : AppCompatActivity() {
     private fun showReminderDialog(todo: Todo) {
         showDateTimePicker { time ->
             val updatedTodo = todo.copy(reminderTime = time)
-            todoViewModel.updateTodo(updatedTodo)
-            setReminder(updatedTodo, time)
-            Toast.makeText(this, "提醒已设置", Toast.LENGTH_SHORT).show()
+            todoViewModel.updateTodo(updatedTodo,
+                onSuccess = {
+                    setReminder(updatedTodo, time)
+                    Toast.makeText(this, "提醒已设置", Toast.LENGTH_SHORT).show()
+                },
+                onError = { error ->
+                    Toast.makeText(this, "设置提醒失败: $error", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 
