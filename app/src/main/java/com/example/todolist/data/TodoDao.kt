@@ -8,6 +8,9 @@ interface TodoDao {
     @Query("SELECT * FROM todos ORDER BY priority DESC, createdAt DESC")
     fun getAllTodos(): LiveData<List<Todo>>
 
+    @Query("SELECT * FROM todos ORDER BY priority DESC, createdAt DESC")
+    suspend fun getAllTodosSync(): List<Todo>
+
     @Query("SELECT * FROM todos WHERE isCompleted = 0 ORDER BY priority DESC, createdAt DESC")
     fun getActiveTodos(): LiveData<List<Todo>>
 
@@ -37,4 +40,10 @@ interface TodoDao {
 
     @Query("SELECT * FROM todos WHERE reminderTime > :currentTime AND reminderTime <= :endTime AND isCompleted = 0")
     suspend fun getTodosWithReminders(currentTime: Long, endTime: Long): List<Todo>
+
+    @Query("SELECT * FROM todos WHERE category = :category ORDER BY priority DESC, createdAt DESC")
+    suspend fun getTodosByCategory(category: String): List<Todo>
+
+    @Query("SELECT * FROM todos WHERE priority = :priority ORDER BY createdAt DESC")
+    suspend fun getTodosByPriority(priority: Int): List<Todo>
 }
